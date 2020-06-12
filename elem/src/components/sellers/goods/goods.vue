@@ -2,7 +2,7 @@
   <div class="goods">
     <div class="menu-wrapper" ref="menuWrapper">
       <ul>
-      	<li v-for="item in goods" class="menu-item">
+      	<li v-for="(item,index) in goods" class="menu-item" :class="{'current':currentIndex===index}" @click="selectMenu(index)">
           <span class="text">
             <span class="icon" v-if="item.type > 0" :class="classMap[item.type]"></span>
             {{item.name}}
@@ -12,7 +12,7 @@
     </div>
     <div class="foods-wrapper" ref="foodsWrapper">
       <ul>
-      	<li v-for="item in goods" class="food-list">
+      	<li v-for="item in goods" class="food-list food-list-hook">
           <h1 class="title">{{item.name}}</h1>
           <ul>
           	<li v-for="food in item.foods" class="food-item border-1px">
@@ -32,9 +32,9 @@
                 </div>
               </div>
               <div class="operate">
-                <span class=""></span>
-                <span class="num"></span>
-                <span class="add"></span>
+                <i class="icon-remove_circle_outline" v-if=""></i>
+                <span class="num">6</span>
+                <i class="icon-add_circle"></i>
               </div>
             </li>
           </ul>
@@ -55,7 +55,21 @@
     },
     data() {
       return {
-        goods: []
+        goods: [],
+        heightList: [],
+        scrollY: 0
+      }
+    },
+    computed: {
+      currentIndex() {
+        for (let i = 0; i < this.heightList.length; i++) {
+          let height1 = this.heightList[i];
+          let height2 = this.heightList[i+1];
+          if (!height2 || (this.scrollY>=height1 && this.scrollY<height2)) {
+            return i;
+          }
+        }
+        return 0;
       }
     },
     created() {
@@ -68,15 +82,44 @@
           console.log(this.goods)
           this.$nextTick(()=>{
             this._initScroll();
+            this._calculateHeight();
           })
         }
       })
     },
     methods:{
-      _initScroll() {
-        this.menuScroll = new MScroll(this.$refs.menuWrapper,{})
+      selectMenu(index) {
+        console.log(index);
+        let foodList = this.$refs.foodsWrapper.getElementsByClassName('food-list-hook');
+        let dom = foodList[index];
+        this.foodsScroll.scrollToElement(dom,300)
+      },
 
-        this.foodsScroll = new MScroll(this.$refs.foodsWrapper,{})
+      _initScroll() {
+        this.menuScroll = new MScroll(this.$refs.menuWrapper,{
+          click: true
+        })
+
+        this.foodsScroll = new MScroll(this.$refs.foodsWrapper,{
+          // 实时监听滚动的位置
+          probeType: 3
+        })
+
+        this.foodsScroll.on('scroll', (pos)=>{
+          this.scrollY = Math.abs(Math.round(pos.y));
+        })
+      },
+      _calculateHeight() {
+        let foodList = this.$refs.foodsWrapper.getElementsByClassName('food-list-hook');
+        console.log(foodList);
+        let height = 0;
+        this.heightList.push(height);
+        for (let i = 0; i < foodList.length; i++) {
+          let item = foodList[i];
+          height += item.clientHeight;
+          this.heightList.push(height);
+        }
+        console.log(this.heightList);
       }
     }
   }
@@ -104,6 +147,15 @@
         line-height: 14px
         // font-size: 12px
         padding: 0 12px
+        &.current
+          position: relative
+          margin-top: -1px
+          // z-index: 10
+          font-weight: 700
+          background-color: #fff
+          color: rgb(7,17,27)
+          .text
+            border-none()
         .text
           display: table-cell
           width: 56px
@@ -143,6 +195,7 @@
           margin: 18px
           padding-bottom: 18px
           border-1px(rgba(7,17,27,0.1))
+          position: relative
           &:last-child
             border-none()
           .icon
@@ -155,7 +208,7 @@
           .content
             // display: flex
             // flex-direction: column
-            flex: 1
+            width: 200px
             .name
               margin: 2px 0 8px
               color: rgb(7,17,27)
@@ -190,4 +243,22 @@
                 text-decoration: line-through
                 font-size: 10px
                 color: rgb(147,153,159)
+          .operate
+            position: absolute
+            right: 18px
+            bottom: 14px
+            width: 70px
+            height: 20px
+            display: flex
+            justify-content: space-between
+            align-items: center
+            .num
+              font-size: 10px
+              color: rgb(147,153,159)
+            .icon-remove_circle_outline
+              font-size: 24px
+              color: rgb(0,160,220)
+            .icon-add_circle
+              font-size: 24px
+              color: rgb(0,160,220)
 </style>
